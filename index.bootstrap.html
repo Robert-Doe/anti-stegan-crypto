@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>Hello, world!</title>
+    <style>
+        textarea{
+            height: 50%;
+            resize: none;
+        }
+    </style>
+</head>
+<body class="container my-5">
+<section class="row">
+    <div class="col-6">
+        <h1 class="display-5">Encryption</h1>
+        <form id="form">
+            <label for="plain-text"></label><textarea id="plain-text" class="form-control h-50"></textarea>
+            <input type="submit"/>
+        </form>
+        <div id="bob" style="display:flex;flex-wrap:wrap;width:600px;">
+        </div>
+        <canvas id="encoder-canvas">
+        </canvas>
+    </div>
+    <div class="col-6">
+        <h1 class="display-5">Decryption</h1>
+        <div>
+            <input type="file" id="imageInput" accept = "image/*">
+            <canvas id= "myCanvas" ></canvas>
+        </div>
+        <div id="decrypted_text" class="w-75">
+
+        </div>
+    </div>
+</section>
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+<script>
+    let imgInput = document.getElementById('imageInput');
+    var myCanvas = document.getElementById("myCanvas"); // Creates a canvas object
+    var myContext = myCanvas.getContext("2d"); // Creates a contect object
+    imgInput.addEventListener('change', function(e) {
+        if(e.target.files) {
+            let imageFile = e.target.files[0]; //here we get the image file
+            var reader = new FileReader();
+            reader.readAsDataURL(imageFile);
+            reader.onloadend = function (e) {
+                var myImage = new Image(); // Creates image object
+                myImage.src = e.target.result; // Assigns converted image to image object
+                myImage.onload = function(ev) {
+                    myCanvas.width = myImage.width; // Assigns image's width to canvas
+                    myCanvas.height = myImage.height; // Assigns image's height to canvas
+                    myContext.drawImage(myImage,0,0); // Draws the image on canvas
+                    let imgData = myCanvas.toDataURL("image/jpeg",1);
+                    // Assigns image base64 string in jpeg format to a variable
+                    let pixelDataArray=Array.from(myContext.getImageData(0, 0, myCanvas.width, myCanvas.height).data).filter(x=>x!==255)
+                    let wholeData=pixelDataArray.map((x)=>String.fromCharCode(x%128)).join('');
+                    document.getElementById('decrypted_text').innerHTML=wholeData;
+                    console.log(wholeData);
+                   /* console.log(myCanvas);
+                    console.log(myContext.getImageData(0, 0, myCanvas.width, myCanvas.height));*/
+                }
+            }
+        }
+
+       /* console.log(myCanvas);
+        console.log(myContext.getImageData(0, 0, myCanvas.width, myCanvas.height));*/
+    });
+</script>
+<script>
+    function toHex(str) {
+        var result = '';
+        for (var i = 0; i < str.length; i++) {
+            result += str.charCodeAt(i).toString(16);
+        }
+        return result;
+    }
+
+    function chunkSubstr(str, size) {
+        const numChunks = Math.ceil(str.length / size)
+        const chunks = new Array(numChunks)
+        for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+            chunks[i] = str.substr(o, size)
+        }
+        return chunks
+    }
+
+    function pixelator(stringArray) {
+        bobDiv.innerHTML = "";
+        /* if ((Math.sqrt(stringArray.length) > Math.floor(Math.sqrt(stringArray.length)))) {
+             console.log("Was greater")
+         } else {
+             console.log("Is a perfect square");
+         }*/
+        console.log(Math.sqrt(stringArray.length))
+        let canvas = document.querySelector('canvas');
+        // canvas.innerHTML="";
+        //console.clear();
+        var c = canvas.getContext('2d');
+        var count = 0;
+        var x = 0;
+        var y = 0;
+        stringArray.forEach((text) => {
+            c.fillStyle = `#${text}`;
+            c.fillRect(x, y, 1, 1);
+            x = x + 1;
+            count = count + 1;
+            if (count % (canvas.width) === 0) {
+                console.log(canvas.width);
+                y++;
+                x = 0;
+            }
+        });
+        console.log("Done Drawing")
+        canvas.addEventListener('click', () => {
+            window.location = canvas.toDataURL("image/png");
+        })
+    }
+
+    let bobDiv = document.getElementById('bob');
+    let theForm = document.getElementById('form');
+    let theTextArea = document.getElementById('plain-text');
+    let theCanvas = document.querySelector('canvas');
+    let ctx=theCanvas.getContext('2d');
+    theForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let hexedString = toHex(document.getElementById('plain-text').value);
+        let isNotSquareNum=Math.sqrt(hexedString.length/6)>Math.floor(Math.sqrt(hexedString.length/6));
+        if(isNotSquareNum){
+            console.log(document.getElementById('plain-text').value);
+            console.log(hexedString.length/6);
+            console.log(Math.sqrt(hexedString.length/6));
+            console.log(Math.floor(Math.sqrt(hexedString.length/6)))
+            console.log(Math.ceil(Math.sqrt(hexedString.length/6)))
+            console.log(hexedString.length);
+            console.log(hexedString);
+            hexedString=hexedString.padEnd(Math.pow(Math.ceil(Math.sqrt(hexedString.length/6)),2)*6,'0');
+            console.log('Padlength',Math.pow(Math.ceil(Math.sqrt(hexedString.length/6)),2)*6)
+            console.log("After Padding");
+            console.log(hexedString);
+            console.log(hexedString.length);
+            //console.log(hexedString);
+        }
+       // console.log(Math.sqrt(hexedString.length/6));
+
+       /* console.log(Math.sqrt(hexedString.length/6));
+        console.log(hexedString);*/
+
+       /* console.log(chunkSubstr(hexedString, 6));
+        let chunkedArray = chunkSubstr(hexedString, 6);
+        console.log(chunkedArray.length);
+        let difference=(Math.sqrt(chunkedArray.length) > Math.floor(Math.sqrt(chunkedArray.length)));
+        if (difference) {
+            console.log("Was greater");
+            theCanvas.width = (Math.floor(Math.sqrt(chunkedArray.length)) + 1);
+            theCanvas.height = (Math.floor(Math.sqrt(chunkedArray.length)) + 1);
+            let paddingArray=Array.from(new Array(chunkedArray.length*difference),(val,index)=> "000000");
+            chunkedArray.push(...paddingArray);
+        } else {
+            console.log("Is a perfect square");
+            theCanvas.width = (Math.floor(Math.sqrt(chunkedArray.length)));
+            theCanvas.height = (Math.floor(Math.sqrt(chunkedArray.length)));
+        }
+        pixelator(chunkedArray);
+        console.log(ctx.getImageData(0, 0, theCanvas.width, theCanvas.height));*/
+        let chunkedArray = chunkSubstr(hexedString, 6);
+        theCanvas.width = (Math.floor(Math.sqrt(chunkedArray.length)));
+        theCanvas.height = (Math.floor(Math.sqrt(chunkedArray.length)));
+        pixelator(chunkedArray);
+    });
+
+</script>
+</body>
+</html>
